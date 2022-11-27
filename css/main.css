@@ -1,0 +1,26 @@
+#tempo-crotchet {
+    width: 30px;
+    vertical-align: initial !important;
+}
+.sheet-row {
+    position: relative;
+    margin-top: 20px;
+}
+.sheet-row img {
+    position: absolute;
+    z-index: 1;
+}
+.sheet-line {
+    border-top: 1px solid #000000;
+    height: 9px;
+    width: 100%;
+    box-sizing: initial !important;
+}
+#output {
+    height: 200px;
+    width: 100%;
+    overflow-x: auto;
+}
+#ie-alert {
+    display: none;
+}

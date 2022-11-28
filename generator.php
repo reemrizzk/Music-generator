@@ -11,12 +11,40 @@ $notelengths_names = ["semiquaver", "quaver", "quaver_dot", "crotchet", "crotche
 function get_rand_notelength($total, $time_signature, $notetype)
 {
     $randnotelength = 0;
-    if ($notetype == 1) { // if "Crotchets only" was chosen
+    if ($notetype == 1) {
+        // if "Crotchets only" was chosen
         return 3;
-    } elseif ($notetype == 2) { // if "Quavers only" was chosen
+    } elseif ($notetype == 2) {
+        // if "Quavers only" was chosen
         return 1;
+    } elseif ($notetype == 3) {
+        // if "Crotchets, minims" was chosen
+        if ($time_signature == 12) {
+			if ($total % $time_signature <5) {
+				if (rand(0,1)==0) {
+					return 3;
+				}
+				else {
+					return 5;
+				}
+			} else {
+				return 3;
+			}
+	    } else {
+			if ($total % $time_signature <9) {
+				if (rand(0,1)==0) {
+					return 3;
+				}
+				else {
+					return 5;
+				}
+			} else {
+				return 3;
+			}			
+		}
     } else {
-        if ($time_signature == 12) { // if time signature is 3/4
+        if ($time_signature == 12) {
+            // if time signature is 3/4
             if ($total % $time_signature == 0) {
                 $randnotelength = rand(0, 6);
             } elseif ($total % $time_signature == 11) {
@@ -32,7 +60,8 @@ function get_rand_notelength($total, $time_signature, $notetype)
             } elseif ($total % $time_signature > 0) {
                 $randnotelength = rand(0, 5);
             }
-        } else { // if time signature is 4/4
+        } else {
+            // if time signature is 4/4
             if ($total % $time_signature == 0) {
                 $randnotelength = rand(0, 7);
             } elseif ($total % $time_signature == 15) {
@@ -54,6 +83,7 @@ function get_rand_notelength($total, $time_signature, $notetype)
         return $randnotelength;
     }
 }
+
 function in_scale($note, $scale, $scale_type)
 {
     $scale_intervals = [];
@@ -78,8 +108,17 @@ function in_scale($note, $scale, $scale_type)
         return false;
     }
 }
-function get_next_note($current, $scale, $scale_type, $notetype) // generate next note based on previous note, (or starting note generate if this is first note)
+
+// if rests was checked then the melody can have rests, otherwise it cannot
+if (isset($_POST['rests'])) {
+    $rests = true;
+} else {
+    $rests = false;
+}
+
+function get_next_note($current, $scale, $scale_type, $notetype, $rests)
 {
+    // generate next note based on previous note, (or starting note generate if this is first note)
     $nextnote = $current;
     $scale_intervals = [];
     if ($scale_type == "major") {
@@ -93,9 +132,11 @@ function get_next_note($current, $scale, $scale_type, $notetype) // generate nex
     } // if none, keep it a normal major key
 
     $addby = 0;
-    if ($notetype == 1 or $notetype == 2) { // if "Crotchets only" or "Quavers only" was choosen, then no rests
+    if (!$rests) {
+        // if "rests" was unchecked, then no rests
         $probability = rand(3, 23);
-    } else { // else, rests can occur
+    } else {
+        // else, rests can occur
         $probability = rand(0, 23);
     }
     if ($probability < 3) {
@@ -103,8 +144,7 @@ function get_next_note($current, $scale, $scale_type, $notetype) // generate nex
     } else {
         if ($probability < 6) {
             $addby = rand(1, 2);
-        }
-		elseif ($probability < 11) {
+        } elseif ($probability < 11) {
             $addby = 2;
         }
         if ($probability < 18) {
@@ -198,6 +238,25 @@ if ($validts) {
     }
 }
 
+// if instrument type was choosen, check that it's any of 3/4 or 4/4, if it's not one of them or no time signature was choosen. then choose a random time signature
+$validts = false;
+if (isset($_POST['timesignature'])) {
+    if (is_numeric($_POST['timesignature'])) {
+        if ($_POST['timesignature'] == 12 || $_POST['timesignature'] == 16) {
+            $validts = true;
+        }
+    }
+}
+if ($validts) {
+    $time_signature = $_POST['timesignature'];
+} else {
+    if (rand(0, 1) == 0) {
+        $time_signature = 16;
+    } else {
+        $time_signature = 12;
+    }
+}
+
 // if amount of bard was choosen, check if it's 2,4, or 8, if it's not one of them or no bars amount was choosen. then choose "2 bars"
 $validbar = false;
 if (isset($_POST['baramount'])) {
@@ -238,7 +297,7 @@ $validnotelength = false;
 $notetype = 0;
 if (isset($_POST['notetype'])) {
     if (is_numeric($_POST['notetype'])) {
-        if ($_POST['notetype'] >= 0 && $_POST['notetype'] <= 2) {
+        if ($_POST['notetype'] >= 0 && $_POST['notetype'] <= 3) {
             $validnotelength = true;
             $notetype = $_POST['notetype'];
         }
@@ -366,7 +425,7 @@ while ($startingnote > 35) {
 }
 $octave = floor($startingnote / 12);
 $notename = $notes_flat[$startingnote % 12];
-if (rand(0, 16) < 2 && $notetype == 0) {
+if (rand(0, 23) < 3 && $rests) {
     // first note is rest
     $melody_notes[] = -1;
     $randnotelength = get_rand_notelength($total, $time_signature, $notetype);
@@ -397,7 +456,7 @@ while ($total < $melody_length) {
         $melody_notelength_length[] = 0;
     } else {
         $barline = true;
-        $nnote = get_next_note($lastnote, $thekey, $scalemood, $notetype);
+        $nnote = get_next_note($lastnote, $thekey, $scalemood, $notetype, $rests);
         if ($nnote >= 0) {
             $lastnote = $nnote;
         }
@@ -417,11 +476,11 @@ while ($total < $melody_length) {
 }
 ?>
     <form method="post" action="">
-	    <div class="form-group">
-        Tempo: <input type="text" name="tempo" placeholder="Tempo in BPM"<?php if ($validtempo) {
+	    <div class="row form-group">
+        <div class="col-md-3 col-lg-2">Tempo: <br class="d-none d-md-block"><input type="number" name="tempo" min="30" max="240" style="width:140px;" placeholder="Tempo in BPM"<?php if ($validtempo) {
             echo " value=\"" . $tempo . "\"";
-        } ?>>
-        Key: <select name="key" size="1">
+        } ?>></div><div class="col-md-3 col-lg-2">
+        Key: <br class="d-none d-md-block"><select name="key" size="1">
         <option value="random">Random</option>
         <option value="0" <?php if ($validkey && $thekey == 0) {
             echo "selected";
@@ -459,8 +518,8 @@ while ($total < $melody_length) {
         <option value="11" <?php if ($validkey && $thekey == 11) {
             echo "selected";
         } ?>>B</option>
-        </select> 
-        Scale: <select name="scaletype" size="1">
+        </select></div><div class="col-md-3 col-lg-2">
+        Scale: <br class="d-none d-md-block"><select name="scaletype" size="1">
         <option value="random">Random</option>
         <option value="0" <?php if ($validmood && $sm == 0) {
             echo "selected";
@@ -471,10 +530,9 @@ while ($total < $melody_length) {
         <option value="2" <?php if ($validmood && $sm == 2) {
             echo "selected";
         } ?>>Harmonic minor</option>
-        </select> 
-		</div>
-		<div class="form-group">
-		Notes: <select name="notetype" size="1">
+        </select></div> 
+		<div class="col-md-3 col-lg-2">
+				Notes: <br class="d-none d-md-block"><select name="notetype" size="1">
         <option value="0">Any</option>
         <option <?php if ($validnotelength && $notetype == 1) {
             echo "selected";
@@ -482,8 +540,15 @@ while ($total < $melody_length) {
         <option <?php if ($validnotelength && $notetype == 2) {
             echo "selected";
         } ?> value="2">Quavers only</option>
+		<option <?php if ($validnotelength && $notetype == 3) {
+            echo "selected";
+        } ?> value="3">Crotchets, minims</option>
         </select>
-        Time signature: <select name="timesignature" size="1">
+		</div>
+		</div>
+		<div class="row form-group">
+        <div class="col-md-3 col-lg-2">
+        Time signature: <br class="d-none d-md-block"><select name="timesignature" size="1">
         <option value="0">Random</option>
         <option <?php if ($validts && $time_signature == 12) {
             echo "selected";
@@ -491,8 +556,8 @@ while ($total < $melody_length) {
         <option <?php if ($validts && $time_signature == 16) {
             echo "selected";
         } ?> value="16">4/4</option>
-        </select>
-        Number of bars: <select name="baramount" size="1">
+        </select></div><div class="col-md-3 col-lg-2">
+        Number of bars: <br class="d-none d-md-block"><select name="baramount" size="1">
         <option value="2">2</option>
         <option <?php if ($validbar && $baramount == 4) {
             echo "selected";
@@ -500,11 +565,9 @@ while ($total < $melody_length) {
         <option <?php if ($validbar && $baramount == 8) {
             echo "selected";
         } ?> value="8">8</option>
-        </select>
-        </div>
-        
-        		<div class="form-group">
-		Instrument: <select name="instrument" size="1">
+        </select></div>
+		<div class="col-md-3 col-lg-2">
+		Instrument: <br class="d-none d-md-block"><select name="instrument" size="1">
         <option <?php if ($validinstrument && $instrument == "square") {
             echo "selected";
         } ?> value="square">Square</option>
@@ -518,7 +581,9 @@ while ($total < $melody_length) {
             echo "selected";
         } ?> value="triangle">Triangle</option>
         </select>
-        Volume: <select name="volume" size="1">
+		</div>
+				<div class="col-md-3 col-lg-2">
+        Volume: <br class="d-none d-md-block"><select name="volume" size="1">
         <option <?php if ($volume == "0.6") {
             echo "selected";
         } ?> value="0.6">Low</option>
@@ -529,13 +594,26 @@ while ($total < $melody_length) {
             echo "selected";
         } ?> value="1">High</option>
         </select>
+		</div>
+        </div>
+        
+        		<div class="row form-group">
+		<div class="col-md-3 col-lg-2">
+<input type="checkbox" name="rests" id="rests" value="true"<?php if ($rests) {
+    echo " checked";
+} ?>>
+        <label for="rests">Allow rests</label><br>
+		</div>
+		<div class="col-md-3 col-lg-2">
+		<input type="submit" class="btn btn-primary" style="margin-bottom:8px;" name="generate" value="Generate">
+		</div>
         </div>
         
         
         
         
         
-        <input type="submit" class="btn btn-primary" style="margin-top:16px;margin-bottom:16px;" name="generate" value="Generate">
+        
         </form><br>  
         <div id="ie-alert" class="alert alert-warning">
    <strong>Warning:</strong> Music player is not supported in internet explorer. Please use a more modern browser.
@@ -785,7 +863,8 @@ while ($total < $melody_length) {
     </div><div id="lcheck"></div>
     </div>
     <script>
-            var frequencies = [130.81,138.59,146.83,155.56,164.81,174.61,185.00,196.00,207.65,220.00,233.08,246.94,
+	    contxt = new (window.AudioContext || window.webkitAudioContext)();
+        var frequencies = [130.81,138.59,146.83,155.56,164.81,174.61,185.00,196.00,207.65,220.00,233.08,246.94,
 261.63,277.18,293.66,311.13,329.63,349.23,369.99,392.00,415.30,440.00,466.16,493.88,
 523.25,554.37,587.33,622.25,659.25,698.46,739.99,783.99,830.61,880.00,932.33,987.77];
         $("#playsound").click(function(){
@@ -794,14 +873,9 @@ while ($total < $melody_length) {
             var arrayLength = melody.length;
             $("#playsound").attr("disabled", true);
             loopMelody();
-            
         });
-        
-        
-        
-        
-        
-        var i = 0;                  //  set your counter to 1
+
+        var i = 0; 
 <?php
 $timeout = [];
 $timeout[] = 1;
@@ -816,6 +890,19 @@ if ($instrument == "triangle") {
     $vol += 0.2;
 }
 ?>
+function playNote(freq,vol,dur) {
+    var osc = contxt.createOscillator();
+    var gn = contxt.createGain();
+    osc.connect(gn);
+    osc.type = '<?php echo $instrument; ?>';
+    osc.frequency.value = freq;
+    gn.connect(contxt.destination);
+    gn.gain.value = vol;
+    osc.start();
+    setTimeout(function () {
+        osc.stop();
+    }, dur);
+}
 function loopMelody() {
       var tempo = <?php echo $tempo; ?> ;
       var melody = <?php echo json_encode($melody_notes); ?>;
@@ -827,12 +914,12 @@ function loopMelody() {
 	  var rlengtht = timeoutnotelength[i]/4;
 	  var tlengtht = ((60/tempo)*rlengtht)*1000;
 	  if(melody[i]==-2){tlength=2;}
-	  beep(0,440.00,'<?php echo $instrument; ?>', 1000); // silent beep because without it first beep may be delayed
+	  playNote(440.00,0,1000); // silent note because without it first note may be delayed
   setTimeout(function() {
       var pitch=melody[i];
       vol = <?php echo $vol; ?>/100; 
 	  if(pitch>=0){
-	  beep(vol,frequencies[pitch],'<?php echo $instrument; ?>', tlength); 
+	  playNote(frequencies[pitch],vol,tlength); 
 	  }
       var lnth = melody.length; 
     i++; 

@@ -219,7 +219,7 @@ if ($validvolume) {
     $volume = "0.8";
 }
 
-// if instrument type was choosen, check that it's any of 3/4 or 4/4, if it's not one of them or no time signature was choosen. then choose a random time signature
+// if time signature was choosen, check that it's any of 3/4 or 4/4, if it's not one of them or no time signature was choosen. then choose a random time signature
 $validts = false;
 if (isset($_POST['timesignature'])) {
     if (is_numeric($_POST['timesignature'])) {
@@ -238,26 +238,7 @@ if ($validts) {
     }
 }
 
-// if instrument type was choosen, check that it's any of 3/4 or 4/4, if it's not one of them or no time signature was choosen. then choose a random time signature
-$validts = false;
-if (isset($_POST['timesignature'])) {
-    if (is_numeric($_POST['timesignature'])) {
-        if ($_POST['timesignature'] == 12 || $_POST['timesignature'] == 16) {
-            $validts = true;
-        }
-    }
-}
-if ($validts) {
-    $time_signature = $_POST['timesignature'];
-} else {
-    if (rand(0, 1) == 0) {
-        $time_signature = 16;
-    } else {
-        $time_signature = 12;
-    }
-}
-
-// if amount of bard was choosen, check if it's 2,4, or 8, if it's not one of them or no bars amount was choosen. then choose "2 bars"
+// if amount of bars was choosen, check if it's 2,4, or 8, if it's not one of them or no bars amount was choosen. then choose "2 bars"
 $validbar = false;
 if (isset($_POST['baramount'])) {
     if (is_numeric($_POST['baramount'])) {
